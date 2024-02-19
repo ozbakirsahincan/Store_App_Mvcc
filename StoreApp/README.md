@@ -1,0 +1,140 @@
+## 17.02.2024
+### Yeni proje oluşturma ve genel mvc yapısı ayağa kaldırma
+
+-> Yüklü nuget paketlerini(package.json un c# versiyonu) ana dizindeki .csproj uzantılı dosyada
+<ItemGroup> altında bulabiliriz.
+Kurulu paketler <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.0" /> şeklinde gözükür
+-> Boş bir Web projesi nasıl oluşturulur ? ;
+-   dotnet new sln , sonra proje içerisine girip dotnet new web komutuyla oluşturuyoruz .
+-> Hangi komutla uygulama başlatılır ?
+-   dotnet watch veya dotnet watch run // watch ifadesi uygulamadaki değişikleri anında görebilmek için
+-> Oluşturulan proje en basit haliyle nasıl ayağa kalkar ?
+-   var builder = WebApplication.CreateBuilder(args);
+var app = builder.Build();
+app.Run();
+-> Basit bir route nasıl tanımlanır ?
+-   app.MapGet("/" , () => "Hello World");
+-> Projede MVC kalıbı kullanıcağımızı nasıl söyleriz ?
+-   builder.Services.AddControllersWithViews();
+-> Oluşturulan klasörler BÜYÜK harfle oluşturulmalı
+
+-> MVC controllerleri otomatik nasıl route oluşturtacağız ?
+-   app.UseHttpsRedirection();
+-   app.UseRouting();
+-> Default route nasıl oluşturulur ?
+-   app.MapControllerRoute(
+name: "default",
+pattern: "{controller=Home}/{action=Index}/{id?}");
+- controller => controllers klasörü altındaki oluşturulan controller adı .
+- action => oluşturulan controller altında kullanılacak method
+- eğer varsa bu method altındaki detay id si
+-> Oluşuturulan her controller class  
+'using Microsoft.AspNetCore.Mvc' altındaki Controller sınıfından inherit edilmedilir.
+-> Controllerin altındaki methodların viewleri dönebilmesi için
+'controller adıyla AYNI klasörün views altında oluşturuması gerekli'!
+-> Controllerin altındaki methodların view dönmesi için
+'IActionResult' interfacesini kullanıyoruz ve altındaki View() methodunu return ediyoruz.
+-> Modelleri database de yönetmek için bir Context modeli oluşturmalıyız .
+-   Bunun için Repository patternini kullanarak 'Code First' yaklaşımını kullanarak yapabiliriz.
+-   Code First yaklaşımı , databaseyi kod ile yönetmeyi temsil eder.
+-   Models altında RepositoryContext adında bir dosya oluşturuyoruz.
+-   Oluşturduğumuz class EFCore alt yapısını kullanacağı için EntityFrameworkCore altından 'DbContext' i
+classımıza inherit ediyoruz
+-   DbContext i inherit ettiğimiz classta tanımladığımız propertyler databasedeki 'Table' leri ifade edecek
+-   Oluşturduğumuz proplar Table ifade edeceği için 'DbSet' tipinde olacak ve
+temsil edeceği modeli kendine tip olarak alacak . DbSet<Product>
+-   Oluşturulan DbSet<Model> propertysi modelin çoğul haliyle ifade edilmelidir.' DbSet<Model> Models ' gibi
+-> Oluşturulan databasenin yönetilebilmesi için uygulamanın bazı parametrelere sahip olması gerekir
+-   ConnectionStrings : appsettings.json altında tanımlanır.
+-   sqlconnection gibi datasource belirteceğiz alanlar bize tanır
+-> Databaseyi kullanmaya ihtiyacımız olduğunda Context yapısını kullanırız .
+-   RepositoryContext i newleyerek içerisine database optionlarını veririz .
+-   Verdiğimiz options'ları RepositoryContext DbContext e gönderir.
+public RepositoryContext(DbContextOptions<RepositoryContext> options) : base(options)
+-   Yukarıdaki ifade RepositoryContext newlendiğinde yani database kullanacağımız zaman
+verdiğimiz bilgiyi base ye yani üst class ı olan DbContext e yönlendirecek ve databasedeki tablelere ulaşacağız.
+-   Daha önce yukarıda tanımladığımız DbSet ile de gerekli navigasyonu yapacak.
+-   Yani nereyi verirsek databasede oraya gidip kayıtlarla çalışacak.
+-> Bağlantı ifadesini kurarken yani databaseye giderken bir servis kaydı yapmalıyız .
+-   Servis kaydını program.cs altında Mvc eklediğimiz yere yapacağız.
+-   Yani builder.Services.AddDbContext<RepositoryContex> e option parametresi tanımlayarak uygulamaya
+veritabanı kullanacağımızı belirteceğiz.
+-   Uygulamada sqlite kullanacağımız için sqlite yi option olarak geçiyoruz .
+-   İstersek direkt olarak connectionstring i parametreye verebiliriz.
+-   Ancak program.cs nin şişmemesi ve uygulamadaki configurations'ların derli toplu olması için
+appsettings.json altında sqlconnection olarak verdiğimiz parametreyi kullanmasını istiyoruz.
+-   options.UseSqlite(builder.Configuration.GetConnectionString("sqlconnection"));
+
+## 18.02.2024
+## Database işlemleri (Migrations , Migration Update  , Sqlite3
+
+-> Sqlite komutları
+-   sqlite3 ile sqlite nin komutlarını yazabiliyoruz     
+-   sqlite3 (database ismi) ile databasenin içerisine girebiliyoruz
+-   .tables         -> bize içerisinde kayıtlı , daha oluşturulmuş table'ları veriyor.
+-   .quit           -> database komut satırından çıkıyor.       
+-   .system         -> normal sistem terminal komutlarını sqlite içinde kullanmamızı sağlar
+-   .system clear   -> ekran çok dolduysa ekranı temizlemek için kullanılır.
+-   .system ls      -> içinde bulunduğu dosyanın içerisindeki dosyaları verir
+-   .show           -> kullanılabilen ayarları verir
+-   .mode           -> sql komutları yazdığımız zaman verilerin bize nasıl gösterileceğini ayarlarız
+default : list 'dir.
+box yaparsak bize excel tablosu gibi bir çıktı verir. Aşağıdaki gibi
+┌───────────┬─────────────┬─────────┐
+│ ProductId │ ProductName │  Price  │
+├───────────┼─────────────┼─────────┤
+│ 1         │ Computer    │ 17000.0 │
+│ 2         │ Keyboard    │ 1000.0  │
+│ 3         │ Mouse       │ 500.0   │
+│ 4         │ Monitor     │ 7000.0  │
+│ 5         │ Deck        │ 1500.0  │
+└───────────┴─────────────┴─────────┘
+
+->
+
+
+-> Database de model tablolarının oluşması için migrations yapmalıyız.
+-   Migration , oluşturulan modelin databaseye uyumlu taslağıdır .
+-   dotnet ef migrations (migrations un ismi)
+-   Oluşturulan migrationa göre database yi update etmeliyiz.
+-   dotnet ef database upgrade ( Oluşturulan migrationdaki schemaları baz alarak databaseyi update eder)
+-> Database veri ekleme :
+-   RepositoryContext bizim database ile iletişim kuracağımız servis.
+-   RepositoryContext DbContext ten inherit edildiği için ve database şu anda boş olduğu için
+DbContext den 'OnModelCreating ' methodunu override etmeliyiz ve bu method bize bir modelBuilder sağlar.
+-   Override ettiğimiz modelBuilder'ın Entity adlı methodu var .
+Oluşturduğumuz entitylere(modellere) veri geçmeliyiz ki database de geçtiğimiz veriler oluşsun.
+bunun için HasData() methodu bu işi yapacak.
+-      protected override void OnModelCreating(ModelBuilder modelBuilder){
+base.OnModelCreating(modelBuilder);
+modelBuilder.Entity<Product>()
+.HasData(
+new Product() { ProductId = 1, ProductName = "Computer", Price = 17_000 },
+new Product() { ProductId = 2, ProductName = "Keyboard", Price = 1_000 },
+new Product() { ProductId = 3, ProductName = "Mouse", Price = 500 },
+new Product() { ProductId = 4, ProductName = "Monitor", Price = 7_000 },
+new Product() { ProductId = 5, ProductName = "Deck", Price = 1_500 }
+);
+}
+-   Kendi elle oluşturduğumuz verilerin ilk önce var olup olmadığını kontrol ediyor.
+Eğer varsa işlem yapmıyor . Eğer yoksa oluşturuyor.Adı üzerine Has ve Data .
+-   Datalar oluştuktan sonra tekrar migration yapmalıyız .
+Bu iş Oluşturulan datanın snapshotunu alıyor .
+-   Snapshot migration oluştuktan sonra databaseyi update ediyoruz
+dotnet ef database update.
+-   Bu işlem migrationsları kontrol ediyor ve databaseye bu geçtiğimiz verileri ekliyor.
+
+-> Dependency Injection :
+-   Oluşturulan servisleri gereken yerde tekrar tekrar tanımlamamak için kullanılan yöntemdir.
+-   Database connectionları yada başka api bağlantı servisleri gibi şeyler için kullanılabilir.
+-   Servis kullanılacak yerde o servisin bir private örnek field i oluşturulur.
+-   Kullanılacak class ın constructorunda tekrar set edilir.
+-       // RepositoryContext servisinin örneği oluşturuldu
+// Genellikle '_' alt çizgi ile başlar
+private readonly RepositoryContext _context;
+// ProductController sınıfının constructoruna implemente edilir
+public ProductController(RepositoryContext context)
+{
+// implemente edilen servis örneği ile implementasyon bağlanır
+_context = context;
+} 

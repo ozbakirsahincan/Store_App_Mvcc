@@ -1,0 +1,25 @@
+@model Product
+<h1>Get item</h1>
+<h3>@Model.ProductName</h3>
+<h3>@Model.Price</h3>
+<h6>
+    
+</h6>
+<div class="btn-group">
+    <a class="btn btn-primary " style="margin-right: 5px" asp-controller="Home" asp-action="Index">
+        <span class="fa-solid fa-house"></span>
+        Home
+    </a>
+    <a class="btn btn-outline-primary" asp-controller="Product" asp-action="Index">
+        Back ?
+        <span class="fa-solid fa-list"></span>
+        
+    </a>
+</div>
+
+@section Header
+{
+    <div>
+        Get cshtml Header yapısı
+    </div>
+}
