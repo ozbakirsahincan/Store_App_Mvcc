@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using StoreApp.Models;
+using Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,7 +10,9 @@ builder.Services.AddDbContext<RepositoryContext>(options =>
 {
     // Connection String i direkt vermek yerine appsettings.json altında verdiğimiz parametreyi veriyoruz.
     //builder.Configuration direk olarak appsettings e bağlanıyor.
-    options.UseSqlite(builder.Configuration.GetConnectionString("sqlconnection"));
+    options.UseSqlite(builder.Configuration.GetConnectionString("sqlconnection"),
+        b => b.MigrationsAssembly("StoreApp")
+    );
 });
 
 

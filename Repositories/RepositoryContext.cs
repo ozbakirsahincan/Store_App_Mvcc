@@ -1,6 +1,7 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Entities.Models;
-namespace StoreApp.Models;
+
+namespace Repositories;
 
 public class RepositoryContext : DbContext
 {
@@ -20,6 +21,6 @@ public class RepositoryContext : DbContext
                 new Product() { ProductId = 3, ProductName = "Mouse", Price = 500 },
                 new Product() { ProductId = 4, ProductName = "Monitor", Price = 7_000 },
                 new Product() { ProductId = 5, ProductName = "Deck", Price = 1_500 }
-                );
+            );
     }
 }
